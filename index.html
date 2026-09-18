@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iSafe · Inspection Content Management POC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #00b578;
+      --green-dark: #009a66;
+      --accent: #03a9f4;
+      --text: #000;
+      --muted: #6b7280;
+      --line: #e0e0e0;
+      --bg: #fff;
+      --grey: #f5f5f5;
+      --row-inactive: #9ca3af;
+      --danger: #d32f2f;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      --sidebar: 228px;
+      --header: 52px;
+      --font: "Roboto", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+    }
+    button, input, select, textarea, label { font-family: inherit; font-size: inherit; pointer-events: auto; }
+    input, select, textarea {
+      pointer-events: auto !important;
+      opacity: 1;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    input[type="text"], input[type="search"], input[type="date"], textarea { cursor: text; }
+    input[type="checkbox"], input[type="radio"] { cursor: pointer; -webkit-user-select: none; user-select: none; }
+    select, button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    /* ——— App chrome ——— */
+    .poc-banner {
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 12px;
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+    .poc-banner strong { color: #fff; font-weight: 500; }
+    .poc-banner span { opacity: 0.8; white-space: nowrap; }
+
+    .app-header {
+      height: var(--header);
+      background: var(--green);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 16px 0 8px;
+      box-shadow: var(--shadow);
+      gap: 8px;
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.12); }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+      margin-right: 20px;
+    }
+    .brand svg { display: block; }
+    .nav-tabs { display: flex; height: 100%; }
+    .nav-tab {
+      background: transparent;
+      border: 0;
+      color: #f5f5f5;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+    .nav-tab:hover { background: #f5f5f5; color: var(--green); }
+    .nav-tab.is-active::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 0;
+      height: 3px;
+      background: #f5f5f5;
+      border-radius: 2px 2px 0 0;
+    }
+    .header-spacer { flex: 1; }
+    .region-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--green);
+      display: grid;
+      place-items: center;
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .shell { display: flex; height: calc(100vh - var(--header) - 29px); }
+    .sidebar {
+      width: var(--sidebar);
+      border-right: 1px solid var(--line);
+      padding: 12px 0;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .side-item {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #374151;
+    }
+    .side-item.is-active { color: var(--green); font-weight: 500; }
+    .side-item:hover { background: #f9fafb; }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    /* ——— List ——— */
+    .page-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 8px;
+    }
+    .section-title { margin: 0; font-size: 15px; font-weight: 700; }
+    .btn {
+      border-radius: 4px;
+      padding: 7px 14px;
+      border: 1px solid transparent;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.2;
+    }
+    .btn-outlined { border-color: #d1d5db; color: #111; }
+    .btn-outlined:hover { background: #f9fafb; }
+    .btn-primary { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn-primary:hover { background: var(--green-dark); }
+    .btn-ghost { background: transparent; color: #374151; }
+    .btn-ghost:hover { background: #f3f4f6; }
+    .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .grid-wrap { padding: 0 20px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .grid-search {
+      display: flex;
+      justify-content: flex-end;
+      padding: 6px 0 10px;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #bdbdbd;
+      padding: 4px 4px 6px;
+      min-width: 220px;
+      color: #9ca3af;
+    }
+    .search-box input {
+      border: 0;
+      outline: 0;
+      width: 100%;
+      color: #111;
+      background: transparent;
+    }
+    .table-scroll { flex: 1; overflow: auto; border: 1px solid var(--line); }
+    table.grid { width: 100%; border-collapse: collapse; }
+    .grid th {
+      background: #fafafa;
+      font-weight: 500;
+      text-align: left;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      color: #374151;
+    }
+    .grid td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+    .grid tbody tr:hover { background: #f9fafb; }
+    .grid tbody tr.is-selected { background: #e3f2fd; }
+    .grid tbody tr.is-inactive td { color: var(--row-inactive); }
+    .grid tbody tr.is-flash { animation: flash 1.4s ease; }
+    @keyframes flash {
+      0%, 100% { background: transparent; }
+      30% { background: #d1fae5; }
+    }
+    .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+    .link-btn {
+      background: none;
+      border: 0;
+      color: var(--accent);
+      padding: 4px 8px;
+    }
+    .link-btn:hover { text-decoration: underline; }
+    .link-btn:disabled { color: #bdbdbd; cursor: not-allowed; text-decoration: none; }
+    .pager {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 4px 0;
+      color: #6b7280;
+      font-size: 13px;
+    }
+    .pager select {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 4px 8px;
+      background: #fff;
+    }
+
+    /* ——— Builder ——— */
+    .builder {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+    .builder-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      min-height: 52px;
+    }
+    .builder-bar h2 {
+      grid-column: 2;
+      justify-self: center;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .builder-actions {
+      grid-column: 3;
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .builder-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      min-height: 0;
+    }
+    .builder-form {
+      overflow: auto;
+      padding: 20px 24px 48px;
+      background: #fafafa;
+    }
+    .builder-preview {
+      border-left: 1px solid var(--line);
+      background: #2b2b2b;
+      overflow: auto;
+      padding: 20px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-caption {
+      color: #d1d5db;
+      font-size: 12px;
+      text-align: center;
+      max-width: 360px;
+      line-height: 1.45;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 18px 18px 16px;
+      margin-bottom: 16px;
+    }
+    .panel h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .help { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .req { color: #111; }
+    .text-input, .select-input, .area-input {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 8px 10px;
+      background: #fff;
+      outline: none;
+    }
+    .text-input:focus, .select-input:focus, .area-input:focus, .combo-trigger:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(0, 181, 120, 0.15);
+    }
+
+    .combo { position: relative; width: 100%; }
+    .combo-trigger {
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      color: #111;
+    }
+    .combo-trigger::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-right: 2px solid #6b7280;
+      border-bottom: 2px solid #6b7280;
+      transform: rotate(45deg) translate(-2px, -2px);
+      flex-shrink: 0;
+    }
+    .combo-trigger[aria-expanded="true"]::after { transform: rotate(225deg) translate(-1px, -1px); }
+    .combo-menu {
+      position: fixed;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+      max-height: 240px;
+      overflow: auto;
+      z-index: 90;
+      padding: 4px 0;
+    }
+    .combo-option {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: #fff;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: #111;
+      border-radius: 0;
+    }
+    .combo-option:hover, .combo-option.is-selected { background: #ecfdf5; }
+    .combo-pager { width: auto; display: inline-block; }
+    .combo-pager .combo-trigger { padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: #fff; min-width: 72px; }
+    .error-text { color: var(--danger); font-size: 12px; margin-top: 6px; }
+    .is-invalid { border-color: var(--danger) !important; }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .card.is-focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0, 181, 120, 0.12); }
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .reorder {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-top: 22px;
+    }
+    .reorder button {
+      width: 24px;
+      height: 20px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 3px;
+      color: #4b5563;
+      padding: 0;
+      line-height: 1;
+    }
+    .reorder button:disabled { opacity: 0.35; }
+    .card-main { flex: 1; min-width: 0; }
+    .card-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 168px 120px 36px;
+      gap: 10px 12px;
+      align-items: end;
+    }
+    .card-name { grid-column: 1 / -2; }
+    .card-remove { grid-column: 4; grid-row: 1; align-self: end; }
+    .switch-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #374151;
+    }
+    .switch input { accent-color: var(--green); width: 16px; height: 16px; }
+    .icon-trash {
+      border: 0;
+      background: transparent;
+      color: #9ca3af;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+    }
+    .icon-trash:hover { background: #fef2f2; color: var(--danger); }
+
+    .choice-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 3px 8px 3px 10px;
+      font-size: 12px;
+    }
+    .chip button {
+      border: 0;
+      background: transparent;
+      color: #6b7280;
+      padding: 0 2px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .add-choice {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .add-choice input {
+      width: 120px;
+      border: 1px dashed #d1d5db;
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .seg button {
+      border: 0;
+      background: #fff;
+      padding: 6px 10px;
+      color: #374151;
+    }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button.is-on { background: #ecfdf5; color: var(--green-dark); font-weight: 500; }
+
+    .q-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+      margin-top: 14px;
+    }
+    .q-tab {
+      border: 0;
+      background: transparent;
+      padding: 8px 14px 10px;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      font-weight: 400;
+    }
+    .q-tab:hover { color: #111; }
+    .q-tab.is-on {
+      color: var(--green-dark);
+      font-weight: 500;
+      border-bottom-color: var(--green);
+    }
+    .q-tab-body { padding-top: 12px; }
+    .manual-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      align-items: flex-end;
+    }
+    .manual-row .help { margin: 0 0 4px; max-width: 360px; }
+
+    .empty-dash {
+      border: 1px dashed #d1d5db;
+      border-radius: 6px;
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      background: #fff;
+    }
+
+    /* ——— Specialist phone ——— */
+    .phone {
+      width: 375px;
+      height: min(760px, calc(100vh - 180px));
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .phone.is-lg { width: 390px; height: min(680px, calc(100vh - 200px)); }
+    .phone-head {
+      display: grid;
+      grid-template-columns: 40px 1fr 40px;
+      align-items: center;
+      min-height: 52px;
+      padding: 8px 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .phone-head button {
+      border: 0;
+      background: transparent;
+      font-size: 20px;
+      color: #111;
+    }
+    .phone-title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .phone-body {
+      flex: 1;
+      overflow: auto;
+      padding: 18px 20px 28px;
+    }
+    .spec-block { margin-bottom: 22px; }
+    .spec-block.is-hot {
+      outline: 2px solid rgba(0, 181, 120, 0.35);
+      outline-offset: 6px;
+      border-radius: 4px;
+    }
+    .spec-label { font-size: 14px; margin-bottom: 8px; color: #111; }
+    .spec-input {
+      width: 100%;
+      height: 44px;
+      border: 0;
+      background: #f4f4f5;
+      border-radius: 6px;
+      padding: 0 12px;
+      color: #111;
+    }
+    .spec-input::placeholder { color: #9ca3af; }
+    .spec-select {
+      width: 100%;
+      height: 44px;
+      border: 0;
+      background: #f4f4f5;
+      border-radius: 6px;
+      padding: 0 12px;
+      color: #9ca3af;
+    }
+    .spec-select.has-value { color: #111; }
+    .spec-area {
+      width: 100%;
+      min-height: 96px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      resize: vertical;
+    }
+    .spec-area::placeholder { color: #9ca3af; }
+    .spec-choices { display: flex; flex-wrap: wrap; gap: 14px 18px; }
+    .phone-form {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      margin: 0;
+    }
+    .spec-choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      background: none;
+      border: 0;
+      padding: 8px 4px;
+      margin: 0;
+      color: #111;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .spec-choice input {
+      appearance: auto;
+      -webkit-appearance: auto;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--green);
+      cursor: pointer;
+      flex-shrink: 0;
+      pointer-events: auto;
+    }
+
+    /* ——— Overlay / modal / toast ——— */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.62);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      padding: 24px;
+    }
+    .preview-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .preview-stage .preview-caption {
+      color: #fff;
+      max-width: 420px;
+    }
+    .preview-actions { display: flex; gap: 8px; }
+
+    .modal {
+      width: min(440px, 100%);
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+      padding: 20px 20px 16px;
+    }
+    .modal h3 { margin: 0 0 8px; font-size: 16px; }
+    .modal p { margin: 0 0 18px; color: #4b5563; line-height: 1.45; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+    .toast {
+      position: fixed;
+      top: 64px;
+      right: 20px;
+      background: #111827;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 4px;
+      z-index: 50;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .builder-body { grid-template-columns: 1fr; }
+      .builder-preview { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="poc-banner">
+    <div><strong>Interactive POC</strong> · Inspection Content Management · session data only (double-click this bar to reset)</div>
+    <span>Add New → build → Preview → Save · Edit / Delete from the list</span>
+  </div>
+
+  <header class="app-header">
+    <button class="icon-btn" aria-label="Menu" type="button">
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+        <path d="M0 1h18M0 7h18M0 13h18" stroke="#fff" stroke-width="2"/>
+      </svg>
+    </button>
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#fff" d="M12 2c.7 3.4 2.2 5.6 5 7.2-2.2.6-3.6 1.7-4.4 3.4C11.8 10.2 10 8.6 7 8c3-1.8 4.4-3.8 5-6z"/>
+        <path fill="#fff" d="M7 14.5c2.4 0 3.8 1.2 4.4 3.5-.8-1.1-2-1.8-3.6-2.1 1.5 1.6 2 3.3 1.7 5.6-2.6-1.6-3.7-3.6-3.4-6.1.3-.3.6-.6.9-.9z"/>
+      </svg>
+      isafe
+    </div>
+    <nav class="nav-tabs" aria-label="Primary">
+      <button class="nav-tab" type="button">JHA</button>
+      <button class="nav-tab" type="button">CHA</button>
+      <button class="nav-tab is-active" type="button">Inspections</button>
+      <button class="nav-tab" type="button">Admin</button>
+    </nav>
+    <div class="header-spacer"></div>
+    <div class="region-chip">CANADA</div>
+    <div class="avatar" title="Signed-in user">SC</div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <button class="side-item is-active" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1" y="1" width="6" height="6" stroke="currentColor"/><rect x="9" y="1" width="6" height="6" stroke="currentColor"/><rect x="1" y="9" width="6" height="6" stroke="currentColor"/><rect x="9" y="9" width="6" height="6" stroke="currentColor"/></svg>
+        Inspection Management
+      </button>
+      <button class="side-item" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="1.5" width="10" height="13" stroke="currentColor"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor"/></svg>
+        Inspection Reports
+      </button>
+      <button class="side-item" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor"/><path d="M8 8H14.5A6.5 6.5 0 0 0 8 1.5V8z" fill="currentColor" opacity=".25"/></svg>
+        Analysis
+      </button>
+    </aside>
+
+    <main class="main">
+      <section id="list-view" class="builder" style="background:#fff">
+        <div class="page-toolbar">
+          <p class="section-title">Inspections Management</p>
+          <button class="btn btn-outlined" id="btn-add" type="button">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6"/></svg>
+            Add New
+          </button>
+        </div>
+        <div class="grid-wrap">
+          <div class="grid-search">
+            <label class="search-box">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor"/><path d="M10.5 10.5L14 14" stroke="currentColor"/></svg>
+              <input id="search-input" type="search" placeholder="Search here ..." />
+            </label>
+          </div>
+          <div class="table-scroll">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th style="width:160px">Created Date</th>
+                  <th style="width:280px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="grid-body"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <div class="combo combo-pager">
+              <button type="button" class="combo-trigger" id="page-size-trigger" data-combo-toggle data-pager="1" aria-expanded="false">10</button>
+              <div class="combo-menu" hidden>
+                <button type="button" class="combo-option" data-combo-pick="page-size" data-v="5">5</button>
+                <button type="button" class="combo-option is-selected" data-combo-pick="page-size" data-v="10">10</button>
+                <button type="button" class="combo-option" data-combo-pick="page-size" data-v="20">20</button>
+              </div>
+            </div>
+            <div id="pager-info">Page 1 of 1 (0 items)</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="builder-view" class="builder" hidden>
+        <div class="builder-bar">
+          <h2 id="builder-title">Add Inspection</h2>
+          <div class="builder-actions">
+            <button class="btn btn-ghost" id="btn-cancel" type="button">Cancel</button>
+            <button class="btn btn-outlined" id="btn-preview" type="button">Preview</button>
+            <button class="btn btn-primary" id="btn-save" type="button">Save</button>
+          </div>
+        </div>
+        <div class="builder-body">
+          <div class="builder-form">
+            <div class="panel">
+              <label class="field-label" for="insp-name">Inspection name <span class="req">*</span></label>
+              <input id="insp-name" class="text-input" type="text" autocomplete="off" placeholder="e.g. Extension Ladder Inspection" />
+              <div id="name-error" class="error-text" hidden>Name is mandatory</div>
+            </div>
+
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h3>Form fields</h3>
+                  <p class="help">Header fields on the specialist form — name, whether it is mandatory, and the input type (text, date, or text area). Use Dropdown for pick-lists such as Covering CTC.</p>
+                </div>
+                <button class="btn btn-outlined" id="btn-add-field" type="button">+ Add field</button>
+              </div>
+              <div id="fields-list"></div>
+            </div>
+
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h3>Inspection questions</h3>
+                  <p class="help">Each question can be a multiple-choice checklist or a typed response (text, date, or multi-line). Mark whether it is mandatory.</p>
+                </div>
+                <button class="btn btn-outlined" id="btn-add-question" type="button">+ Add question</button>
+              </div>
+              <div id="questions-list"></div>
+            </div>
+
+            <div class="panel">
+              <h3>Always included</h3>
+              <p class="help" style="margin:0">Additional Notes is already on every specialist inspection form. It stays optional and is shown at the bottom of the preview.</p>
+            </div>
+          </div>
+
+          <aside class="builder-preview">
+            <div class="preview-caption">Specialist preview · updates as you type · this is what field techs will fill in</div>
+            <div id="live-phone"></div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="preview-overlay" class="overlay" hidden>
+    <div class="preview-stage">
+      <div class="preview-caption" style="color:#fff">Specialist form preview — confirm the layout, then save from here or go back to edit</div>
+      <div id="overlay-phone"></div>
+      <div class="preview-actions">
+        <button class="btn btn-outlined" id="btn-preview-close" type="button" style="background:#fff">Back to editor</button>
+        <button class="btn btn-primary" id="btn-preview-save" type="button">Save inspection</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm-overlay" class="overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h3 id="confirm-title">Confirm</h3>
+      <p id="confirm-body"></p>
+      <div class="modal-actions">
+        <button class="btn btn-outlined" id="confirm-cancel" type="button">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORAGE_KEY = "isafe-insp-cms-poc-v1";
+      var YES_NO_NA = ["Yes", "No", "N/A"];
+      var SAMPLE_CTC = ["Toronto — 1042", "Vancouver — 2210", "Calgary — 3301"];
+
+      var uid = 200;
+      function nextId() { uid += 1; return uid; }
+
+      function field(name, type, required, options) {
+        return { id: nextId(), name: name, type: type, required: required !== false, options: options ? options.slice() : [] };
+      }
+      function question(text, options, selection, required, answerMode, inputType) {
+        return {
+          id: nextId(),
+          text: text,
+          options: (options || YES_NO_NA).slice(),
+          selection: selection || "radio",
+          required: required !== false,
+          answerMode: answerMode || "choice",
+          inputType: inputType || "text"
+        };
+      }
+
+      function normalizeQuestion(q) {
+        if (!q) return q;
+        if (!q.answerMode) q.answerMode = "choice";
+        if (!q.inputType) q.inputType = "text";
+        if (!q.selection) q.selection = "radio";
+        if (!q.options || !q.options.length) q.options = YES_NO_NA.slice();
+        return q;
+      }
+      function inspection(id, name, created, fields, questions, isActive) {
+        return {
+          id: id,
+          name: name,
+          createdDate: created,
+          isActive: isActive !== false,
+          fields: fields,
+          questions: questions
+        };
+      }
+
+      var seed = [
+        inspection(1, "Step Ladder Inspection", "12 Jan 2025", [
+          field("Ladder Id", "text", true),
+          field("Covering CTC", "dropdown", true, SAMPLE_CTC),
+          field("Ladder Make/Description", "text", true),
+          field("Max Weight", "text", true),
+          field("Ladder Height", "text", true)
+        ], [
+          question("Rungs/Steps are in good condition?"),
+          question("Rails are not bent or cracked?"),
+          question("Labels are in place and legible?"),
+          question("Spreader arms lock in place and are not damaged?"),
+          question("Colleague keeps centered on the ladder when in use?")
+        ]),
+        inspection(2, "Extension Ladder Inspection", "08 Mar 2025", [
+          field("Ladder Id", "text", true),
+          field("Covering CTC", "dropdown", true, SAMPLE_CTC),
+          field("Ladder Make/Description", "text", true),
+          field("Max Weight", "text", true),
+          field("Ladder Height", "text", true)
+        ], [
+          question("Rungs/Steps are in good condition?"),
+          question("Rails are not bent or cracked?"),
+          question("Labels are in place and legible?"),
+          question("Rung locks are in place on extension ladders?"),
+          question("Ladder tied off / secured in place for use?"),
+          question("Braces/Feet not worn, broken, missing?"),
+          question("Rope and pulley securely attached?"),
+          question("Colleague’s shoes and rungs are not wet / slippery?"),
+          question("Ladder extends 3 feet beyond roof edge?"),
+          question("Colleague maintains 3 point contact when climbing?")
+        ]),
+        inspection(3, "Fall Protection Harness Inspection", "22 Apr 2025", [
+          field("Harness Make", "text", true),
+          field("Model #", "text", true),
+          field("MFR Date", "date", true),
+          field("Serial #", "text", true),
+          field("Covering CTC", "dropdown", true, SAMPLE_CTC)
+        ], [
+          question("Shoulder Straps", ["Pass", "Fail", "N/A"]),
+          question("Chest & Back Straps", ["Pass", "Fail", "N/A"]),
+          question("Cuts / Frayed", ["Pass", "Fail", "N/A"]),
+          question("Legible Label", ["Pass", "Fail", "N/A"])
+        ]),
+        inspection(4, "Fall Protection Lanyard Inspection", "22 Apr 2025", [
+          field("Lanyard Make", "text", true),
+          field("Model #", "text", true),
+          field("MFR Date", "date", true),
+          field("Length (ft)", "text", true),
+          field("Covering CTC", "dropdown", true, SAMPLE_CTC)
+        ], [
+          question("Broken / Loose Stitches", ["Pass", "Fail", "N/A"]),
+          question("Termination Stitches", ["Pass", "Fail", "N/A"]),
+          question("Hardware condition", ["Pass", "Fail", "N/A"])
+        ]),
+        inspection(5, "Supervisor's Job-site Inspection Form", "15 Jun 2025", [
+          field("Job Name", "text", true),
+          field("Job/WO Number", "text", true),
+          field("Job Location", "text", true),
+          field("Comments", "textarea", false)
+        ], [
+          question("Reviewed w/ Project Lead?", ["Yes", "No"]),
+          question("Site conditions acceptable?", YES_NO_NA)
+        ]),
+        inspection(6, "Aerial Lift Inspection Checklist (Electrical)", "02 Aug 2025", [
+          field("Date of Inspection", "date", true),
+          field("Vehicle ID", "text", true),
+          field("Hour meter", "text", true),
+          field("Operators Name", "text", true)
+        ], [
+          question("Controls function correctly?"),
+          question("Emergency stop works?"),
+          question("Platform / guardrails intact?")
+        ]),
+        inspection(7, "Aerial Lift Inspection Checklist (Internal Combustion)", "02 Aug 2025", [
+          field("Date of Inspection", "date", true),
+          field("Vehicle ID", "text", true),
+          field("Hour meter", "text", true),
+          field("Operators Name", "text", true)
+        ], [
+          question("Fluid levels acceptable?"),
+          question("No fuel or hydraulic leaks?"),
+          question("Tires / wheels in good condition?")
+        ])
+      ];
+
+      var state = {
+        items: [],
+        search: "",
+        page: 1,
+        pageSize: 10,
+        selectedId: null,
+        flashId: null,
+        view: "list",
+        editingId: null,
+        draft: null,
+        dirty: false,
+        focusKey: null,
+        previewAnswers: {},
+        previewDetails: {},
+        previewNotes: ""
+      };
+
+      var els = {
+        listView: document.getElementById("list-view"),
+        builderView: document.getElementById("builder-view"),
+        gridBody: document.getElementById("grid-body"),
+        pagerInfo: document.getElementById("pager-info"),
+        search: document.getElementById("search-input"),
+        pageSizeTrigger: document.getElementById("page-size-trigger"),
+        name: document.getElementById("insp-name"),
+        nameError: document.getElementById("name-error"),
+        fields: document.getElementById("fields-list"),
+        questions: document.getElementById("questions-list"),
+        builderTitle: document.getElementById("builder-title"),
+        livePhone: document.getElementById("live-phone"),
+        overlay: document.getElementById("preview-overlay"),
+        overlayPhone: document.getElementById("overlay-phone"),
+        confirm: document.getElementById("confirm-overlay"),
+        confirmTitle: document.getElementById("confirm-title"),
+        confirmBody: document.getElementById("confirm-body"),
+        confirmOk: document.getElementById("confirm-ok"),
+        toast: document.getElementById("toast")
+      };
+
+      function esc(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function clone(obj) {
+        return JSON.parse(JSON.stringify(obj));
+      }
+
+      function formatToday() {
+        return new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      }
+
+      function load() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            state.items = parsed.items || seed;
+            uid = parsed.uid || 400;
+            state.items.forEach(function (item) {
+              (item.questions || []).forEach(normalizeQuestion);
+            });
+            return;
+          }
+        } catch (e) { /* ignore */ }
+        state.items = clone(seed);
+        uid = 400;
+      }
+
+      function persist() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: state.items, uid: uid }));
+      }
+
+      function filtered() {
+        var q = state.search.trim().toLowerCase();
+        if (!q) return state.items.slice();
+        return state.items.filter(function (item) { return item.name.toLowerCase().indexOf(q) !== -1; });
+      }
+
+      function paged() {
+        var rows = filtered();
+        var start = (state.page - 1) * state.pageSize;
+        return { rows: rows.slice(start, start + state.pageSize), total: rows.length };
+      }
+
+      function showToast(message) {
+        els.toast.textContent = message;
+        els.toast.hidden = false;
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () { els.toast.hidden = true; }, 2600);
+      }
+
+      var confirmHandler = null;
+      function askConfirm(title, body, okLabel, onOk) {
+        els.confirmTitle.textContent = title;
+        els.confirmBody.textContent = body;
+        els.confirmOk.textContent = okLabel || "Confirm";
+        els.confirmOk.className = okLabel === "Delete" ? "btn btn-danger" : "btn btn-primary";
+        confirmHandler = onOk;
+        els.confirm.hidden = false;
+      }
+      function closeConfirm() {
+        els.confirm.hidden = true;
+        confirmHandler = null;
+      }
+
+      function renderList() {
+        var page = paged();
+        var pages = Math.max(1, Math.ceil(page.total / state.pageSize));
+        if (state.page > pages) state.page = pages;
+        els.gridBody.innerHTML = page.rows.map(function (item) {
+          var inactive = item.isActive ? "" : " is-inactive";
+          var selected = item.id === state.selectedId ? " is-selected" : "";
+          var flash = item.id === state.flashId ? " is-flash" : "";
+          return (
+            '<tr class="' + inactive + selected + flash + '" data-id="' + item.id + '">' +
+              "<td>" + esc(item.name) + "</td>" +
+              "<td>" + esc(item.createdDate) + "</td>" +
+              '<td><div class="actions">' +
+                '<button class="link-btn" data-action="edit" ' + (item.isActive ? "" : "disabled") + ">Edit</button>" +
+                '<button class="link-btn" data-action="toggle">' + (item.isActive ? "Disable" : "Enable") + "</button>" +
+                '<button class="link-btn" data-action="delete">Delete</button>' +
+              "</div></td>" +
+            "</tr>"
+          );
+        }).join("");
+        els.pagerInfo.textContent = "Page " + state.page + " of " + pages + " (" + page.total + " items)";
+        if (els.pageSizeTrigger) els.pageSizeTrigger.textContent = String(state.pageSize);
+      }
+
+      function emptyDraft() {
+        return { name: "", fields: [], questions: [] };
+      }
+
+      function openBuilder(item) {
+        state.view = "builder";
+        state.editingId = item ? item.id : null;
+        state.draft = item
+          ? { name: item.name, fields: clone(item.fields), questions: clone(item.questions).map(normalizeQuestion) }
+          : emptyDraft();
+        state.dirty = false;
+        state.focusKey = null;
+        state.previewAnswers = {};
+        state.previewDetails = {};
+        state.previewNotes = "";
+        els.builderTitle.textContent = item ? "Edit Inspection" : "Add Inspection";
+        els.name.value = state.draft.name;
+        els.name.classList.remove("is-invalid");
+        els.nameError.hidden = true;
+        els.listView.hidden = true;
+        els.builderView.hidden = false;
+        renderBuilderLists();
+        updatePreview();
+        els.name.focus();
+      }
+
+      function closeBuilder() {
+        closeCombos();
+        state.view = "list";
+        state.draft = null;
+        state.editingId = null;
+        state.dirty = false;
+        state.focusKey = null;
+        els.overlay.hidden = true;
+        els.overlayPhone.innerHTML = "";
+        els.builderView.hidden = true;
+        els.listView.hidden = false;
+        renderList();
+      }
+
+      function typeLabel(type) {
+        if (type === "textarea") return "Text area";
+        if (type === "date") return "Date";
+        if (type === "dropdown") return "Dropdown";
+        return "Text";
+      }
+
+      function comboMarkup(currentLabel, options, pickKind, extraAttrs, triggerClass, placeholder) {
+        extraAttrs = extraAttrs || "";
+        var phAttr = placeholder ? ' data-placeholder="' + esc(placeholder) + '"' : "";
+        return (
+          '<div class="combo">' +
+            '<button type="button" class="combo-trigger ' + (triggerClass || "select-input") + '" data-combo-toggle aria-expanded="false"' + phAttr + ">" +
+              esc(currentLabel) +
+            "</button>" +
+            '<div class="combo-menu" hidden>' +
+              options.map(function (o) {
+                return '<button type="button" class="combo-option' + (o.selected ? " is-selected" : "") +
+                  '" data-combo-pick="' + pickKind + '" data-v="' + esc(o.value) + '" ' + extraAttrs + ">" +
+                  esc(o.label) + "</button>";
+              }).join("") +
+            "</div></div>"
+        );
+      }
+
+      function closeCombos() {
+        document.querySelectorAll(".combo-menu").forEach(function (menu) {
+          menu.hidden = true;
+          if (menu._home) {
+            menu._home.appendChild(menu);
+            menu._home = null;
+          }
+        });
+        document.querySelectorAll("[data-combo-toggle]").forEach(function (btn) {
+          btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      function placeComboMenu(trigger, menu) {
+        var r = trigger.getBoundingClientRect();
+        var width = Math.max(r.width, 180);
+        menu.style.position = "fixed";
+        menu.style.left = r.left + "px";
+        menu.style.minWidth = width + "px";
+        menu.style.width = width + "px";
+        menu.style.zIndex = "90";
+        var maxH = 240;
+        if (r.bottom + 8 + Math.min(maxH, 160) > window.innerHeight && r.top > 180) {
+          menu.style.top = Math.max(8, r.top - maxH - 4) + "px";
+        } else {
+          menu.style.top = (r.bottom + 4) + "px";
+        }
+      }
+
+      function openCombo(trigger) {
+        var combo = trigger.closest(".combo");
+        if (!combo) return;
+        var menu = combo._menu || combo.querySelector(".combo-menu");
+        if (!menu) return;
+        combo._menu = menu;
+        var alreadyOpen = !menu.hidden;
+        closeCombos();
+        if (alreadyOpen) return;
+        menu._home = combo;
+        document.body.appendChild(menu);
+        menu.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+        placeComboMenu(trigger, menu);
+      }
+
+      function syncPreviewLabels() {
+        if (!state.draft) return;
+        var title = formTitle(state.draft.name);
+        document.querySelectorAll(".phone-title").forEach(function (el) {
+          el.textContent = title;
+        });
+        state.draft.fields.forEach(function (item) {
+          document.querySelectorAll('[data-preview-key="f-' + item.id + '"] .spec-label').forEach(function (el) {
+            el.innerHTML = esc(item.name || "Untitled field") + (item.required ? ' <span class="req">*</span>' : "");
+          });
+        });
+        state.draft.questions.forEach(function (item) {
+          document.querySelectorAll('[data-preview-key="q-' + item.id + '"] .spec-label').forEach(function (el) {
+            el.innerHTML = esc(item.text || "Untitled question") + (item.required ? ' <span class="req">*</span>' : "");
+          });
+        });
+      }
+
+      function renderFields() {
+        var list = state.draft.fields;
+        if (!list.length) {
+          els.fields.innerHTML = '<div class="empty-dash">No fields yet. Add Ladder Id, Covering CTC, dates, or any header field the specialist should complete.</div>';
+          return;
+        }
+        els.fields.innerHTML = list.map(function (item, index) {
+          var optionsBlock = item.type === "dropdown"
+            ? '<div class="choice-row">' + item.options.map(function (opt, oi) {
+                return '<span class="chip">' + esc(opt) + '<button type="button" data-act="drop-opt" data-i="' + index + '" data-oi="' + oi + '" aria-label="Remove option">×</button></span>';
+              }).join("") +
+              '<span class="add-choice"><input type="text" autocomplete="off" data-act="drop-new" data-i="' + index + '" placeholder="Add option" /><button class="link-btn" type="button" data-act="drop-add" data-i="' + index + '">Add</button></span></div>'
+            : "";
+          return (
+            '<div class="card' + (state.focusKey === "f-" + item.id ? " is-focus" : "") + '" data-focus="f-' + item.id + '">' +
+              '<div class="card-top">' +
+                '<div class="reorder">' +
+                  '<button type="button" data-act="f-up" data-i="' + index + '" ' + (index === 0 ? "disabled" : "") + ' aria-label="Move field up">▴</button>' +
+                  '<button type="button" data-act="f-down" data-i="' + index + '" ' + (index === list.length - 1 ? "disabled" : "") + ' aria-label="Move field down">▾</button>' +
+                "</div>" +
+                '<div class="card-main">' +
+                  '<div class="card-grid">' +
+                    '<div class="card-name"><label class="field-label">Field name <span class="req">*</span></label>' +
+                      '<input class="text-input" type="text" autocomplete="off" data-act="f-name" data-i="' + index + '" value="' + esc(item.name) + '" placeholder="e.g. Ladder Id" /></div>' +
+                    '<button class="icon-trash card-remove" type="button" data-act="f-del" data-i="' + index + '" aria-label="Remove field" title="Remove field">✕</button>' +
+                    '<div><label class="field-label">Data type</label>' +
+                      comboMarkup(typeLabel(item.type), [
+                        { value: "text", label: "Text", selected: item.type === "text" },
+                        { value: "date", label: "Date", selected: item.type === "date" },
+                        { value: "textarea", label: "Text area", selected: item.type === "textarea" },
+                        { value: "dropdown", label: "Dropdown", selected: item.type === "dropdown" }
+                      ], "f-type", 'data-i="' + index + '"') +
+                    "</div>" +
+                    '<div class="switch-row"><span class="field-label">Mandatory</span>' +
+                      '<label class="switch"><input type="checkbox" data-act="f-req" data-i="' + index + '"' + (item.required ? " checked" : "") + " /> Required</label></div>" +
+                  "</div>" +
+                  optionsBlock +
+                "</div>" +
+              "</div>" +
+            "</div>"
+          );
+        }).join("");
+      }
+
+      function renderQuestions() {
+        var list = state.draft.questions;
+        if (!list.length) {
+          els.questions.innerHTML = '<div class="empty-dash">No questions yet. Add checklist items such as “Rails are not bent or cracked?” or typed prompts such as “On which date did the AC repair happen?”</div>';
+          return;
+        }
+        els.questions.innerHTML = list.map(function (item, index) {
+          var isChoice = item.answerMode !== "manual";
+          var chips = (item.options || []).map(function (opt, oi) {
+            return '<span class="chip">' + esc(opt) + (item.options.length > 2
+              ? '<button type="button" data-act="q-opt-del" data-i="' + index + '" data-oi="' + oi + '" aria-label="Remove choice">×</button>'
+              : "") + "</span>";
+          }).join("");
+          var choiceBody =
+            '<div class="q-tab-body">' +
+              '<span class="field-label">Multiple-choice options</span>' +
+              '<div class="choice-row">' + chips +
+                '<span class="add-choice"><input type="text" autocomplete="off" data-act="q-new" data-i="' + index + '" placeholder="Add choice" /><button class="link-btn" type="button" data-act="q-opt-add" data-i="' + index + '">Add</button></span>' +
+              "</div>" +
+              '<div style="margin-top:14px"><div class="field-label">How specialists answer</div>' +
+                '<div class="seg">' +
+                  '<button type="button" data-act="q-sel" data-i="' + index + '" data-v="radio" class="' + (item.selection === "radio" ? "is-on" : "") + '">Radio (one choice)</button>' +
+                  '<button type="button" data-act="q-sel" data-i="' + index + '" data-v="checkbox" class="' + (item.selection === "checkbox" ? "is-on" : "") + '">Checkbox (multiple)</button>' +
+                "</div></div>" +
+            "</div>";
+          var manualType = item.inputType || "text";
+          var manualBody =
+            '<div class="q-tab-body">' +
+              '<div class="manual-row">' +
+                '<div style="width:188px"><label class="field-label">Response type</label>' +
+                  comboMarkup(typeLabel(manualType), [
+                    { value: "text", label: "Text", selected: manualType === "text" },
+                    { value: "date", label: "Date", selected: manualType === "date" },
+                    { value: "textarea", label: "Text area", selected: manualType === "textarea" }
+                  ], "q-input-type", 'data-i="' + index + '"') +
+                "</div>" +
+                '<p class="help">Specialists see one text, date, or multi-line field — not a list of choices.</p>' +
+              "</div>" +
+            "</div>";
+          return (
+            '<div class="card' + (state.focusKey === "q-" + item.id ? " is-focus" : "") + '" data-focus="q-' + item.id + '">' +
+              '<div class="card-top">' +
+                '<div class="reorder">' +
+                  '<button type="button" data-act="q-up" data-i="' + index + '" ' + (index === 0 ? "disabled" : "") + ' aria-label="Move question up">▴</button>' +
+                  '<button type="button" data-act="q-down" data-i="' + index + '" ' + (index === list.length - 1 ? "disabled" : "") + ' aria-label="Move question down">▾</button>' +
+                "</div>" +
+                '<div class="card-main">' +
+                  '<div style="display:flex;gap:10px;align-items:flex-end">' +
+                    '<div style="flex:1"><label class="field-label">Question <span class="req">*</span></label>' +
+                      '<input class="text-input" type="text" autocomplete="off" data-act="q-text" data-i="' + index + '" value="' + esc(item.text) + '" placeholder="e.g. Rails are not bent or cracked?" /></div>' +
+                    '<button class="icon-trash" type="button" data-act="q-del" data-i="' + index + '" aria-label="Remove question">✕</button>' +
+                  "</div>" +
+                  '<div class="q-tabs" role="tablist">' +
+                    '<button type="button" role="tab" class="q-tab' + (isChoice ? " is-on" : "") + '" data-act="q-mode" data-i="' + index + '" data-v="choice" aria-selected="' + isChoice + '">Multiple-choice options</button>' +
+                    '<button type="button" role="tab" class="q-tab' + (!isChoice ? " is-on" : "") + '" data-act="q-mode" data-i="' + index + '" data-v="manual" aria-selected="' + (!isChoice) + '">Typed response</button>' +
+                  "</div>" +
+                  (isChoice ? choiceBody : manualBody) +
+                  '<label class="switch" style="margin-top:14px"><input type="checkbox" data-act="q-req" data-i="' + index + '"' + (item.required ? " checked" : "") + " /> Mandatory question</label>" +
+                "</div>" +
+              "</div>" +
+            "</div>"
+          );
+        }).join("");
+      }
+
+      function renderBuilderLists() {
+        closeCombos();
+        renderFields();
+        renderQuestions();
+      }
+
+      function formTitle(name) {
+        var n = (name || "").trim() || "Untitled Inspection";
+        return /form$/i.test(n) ? n : n + " Form";
+      }
+
+      function specFieldHtml(item) {
+        var star = item.required ? ' <span class="req">*</span>' : "";
+        var key = "f-" + item.id;
+        var val = state.previewDetails[key] || "";
+        var control;
+        if (item.type === "dropdown") {
+          var ph = /ctc/i.test(item.name) ? "Select CTC" : "Select...";
+          var opts = (item.options.length ? item.options : ["Option 1"]).map(function (o) {
+            return { value: o, label: o, selected: val === o };
+          });
+          control = comboMarkup(val || ph, opts, "preview-field", 'data-id="' + item.id + '"', "spec-select" + (val ? " has-value" : ""), ph);
+        } else if (item.type === "date") {
+          control = '<input class="spec-input" type="date" data-preview-field="' + item.id + '" value="' + esc(val) + '" />';
+        } else if (item.type === "textarea") {
+          control = '<textarea class="spec-area" data-preview-field="' + item.id + '" placeholder="Type here...">' + esc(val) + "</textarea>";
+        } else {
+          control = '<input class="spec-input" type="text" autocomplete="off" data-preview-field="' + item.id + '" value="' + esc(val) + '" placeholder="Type here..." />';
+        }
+        var hot = state.focusKey === key ? " is-hot" : "";
+        return '<div class="spec-block' + hot + '" data-preview-key="' + key + '"><div class="spec-label">' + esc(item.name || "Untitled field") + star + "</div>" + control + "</div>";
+      }
+
+      function specQuestionHtml(item, formPrefix) {
+        var star = item.required ? ' <span class="req">*</span>' : "";
+        var key = "q-" + item.id;
+        var hot = state.focusKey === key ? " is-hot" : "";
+        var label = '<div class="spec-label">' + esc(item.text || "Untitled question") + star + "</div>";
+
+        if (item.answerMode === "manual") {
+          var typed = state.previewAnswers[key];
+          if (typed == null || Array.isArray(typed)) typed = "";
+          var control;
+          var typedType = item.inputType || "text";
+          if (typedType === "date") {
+            control = '<input class="spec-input" type="date" data-preview-q="' + item.id + '" data-mode="manual" value="' + esc(typed) + '" />';
+          } else if (typedType === "textarea") {
+            control = '<textarea class="spec-area" data-preview-q="' + item.id + '" data-mode="manual" placeholder="Type here...">' + esc(typed) + "</textarea>";
+          } else {
+            control = '<input class="spec-input" type="text" autocomplete="off" data-preview-q="' + item.id + '" data-mode="manual" value="' + esc(typed) + '" placeholder="Type here..." />';
+          }
+          return '<div class="spec-block' + hot + '" data-preview-key="' + key + '">' + label + control + "</div>";
+        }
+
+        var selected = state.previewAnswers[key] || (item.selection === "checkbox" ? [] : "");
+        var inputType = item.selection === "checkbox" ? "checkbox" : "radio";
+        var groupName = formPrefix + "-q-" + item.id;
+        var choices = (item.options.length ? item.options : YES_NO_NA).map(function (opt) {
+          var on = item.selection === "checkbox"
+            ? selected.indexOf(opt) !== -1
+            : selected === opt;
+          return (
+            '<label class="spec-choice">' +
+              '<input type="' + inputType + '" name="' + groupName + '" value="' + esc(opt) + '"' +
+                (on ? " checked" : "") +
+                ' data-preview-q="' + item.id + '" data-mode="' + item.selection + '" />' +
+              esc(opt) +
+            "</label>"
+          );
+        }).join("");
+        return '<div class="spec-block' + hot + '" data-preview-key="' + key + '">' + label +
+          '<div class="spec-choices">' + choices + "</div></div>";
+      }
+
+      function phoneHtml(large) {
+        var d = state.draft;
+        if (!d) return "";
+        var prefix = large ? "ov" : "lv";
+        var fields = d.fields.map(specFieldHtml).join("");
+        var questions = d.questions.map(function (q) { return specQuestionHtml(q, prefix); }).join("");
+        var empty = !d.fields.length && !d.questions.length
+          ? '<p style="color:#9ca3af;font-size:13px;margin:0 0 20px">Add fields and questions on the left to see them here.</p>'
+          : "";
+        return (
+          '<div class="phone' + (large ? " is-lg" : "") + '">' +
+            '<div class="phone-head"><button type="button" aria-label="Back">‹</button>' +
+              '<div class="phone-title">' + esc(formTitle(d.name)) + "</div><div></div></div>" +
+            '<form class="phone-form phone-body" onsubmit="return false">' + empty + fields + questions +
+              '<div class="spec-block"><div class="spec-label">Additional Notes</div>' +
+                '<textarea class="spec-area" data-preview-notes="1" placeholder="Type here...">' + esc(state.previewNotes || "") + "</textarea></div>" +
+            "</form></div>"
+        );
+      }
+
+      function updatePreview() {
+        closeCombos();
+        els.livePhone.innerHTML = phoneHtml(false);
+        if (!els.overlay.hidden) els.overlayPhone.innerHTML = phoneHtml(true);
+      }
+
+      function markDirty() { state.dirty = true; }
+
+      function move(arr, i, dir) {
+        var j = i + dir;
+        if (j < 0 || j >= arr.length) return;
+        var tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+      }
+
+      function addChoice(input, list) {
+        var value = (input && input.value || "").trim();
+        if (!value) return;
+        if (list.indexOf(value) === -1) list.push(value);
+        if (input) input.value = "";
+      }
+
+      function validateDraft() {
+        var ok = true;
+        var name = state.draft.name.trim();
+        if (!name) {
+          els.name.classList.add("is-invalid");
+          els.nameError.hidden = false;
+          ok = false;
+        } else {
+          els.name.classList.remove("is-invalid");
+          els.nameError.hidden = true;
+        }
+        state.draft.fields.forEach(function (f) {
+          if (!f.name.trim()) ok = false;
+        });
+        state.draft.questions.forEach(function (q) {
+          if (!q.text.trim()) ok = false;
+          else if (q.answerMode !== "manual" && q.options.length < 2) ok = false;
+        });
+        if (!ok && name) showToast("Every field and question needs a name. Multiple-choice questions need at least two choices.");
+        return ok;
+      }
+
+      function saveDraft() {
+        if (!validateDraft()) return;
+        var payload = {
+          name: state.draft.name.trim(),
+          fields: clone(state.draft.fields),
+          questions: clone(state.draft.questions)
+        };
+        if (state.editingId) {
+          state.items = state.items.map(function (item) {
+            if (item.id !== state.editingId) return item;
+            return Object.assign({}, item, payload);
+          });
+          state.flashId = state.editingId;
+          showToast("Inspection updated successfully!");
+        } else {
+          var created = {
+            id: nextId(),
+            createdDate: formatToday(),
+            isActive: true
+          };
+          Object.assign(created, payload);
+          state.items = state.items.concat([created]);
+          state.flashId = created.id;
+          state.selectedId = created.id;
+          showToast("Inspection added successfully!");
+        }
+        persist();
+        closeBuilder();
+        setTimeout(function () { state.flashId = null; renderList(); }, 1400);
+      }
+
+      function resetIfNeeded() {
+        if (confirm("Reset this POC back to the original inspection list? Your added forms will be removed.")) {
+          localStorage.removeItem(STORAGE_KEY);
+          load();
+          renderList();
+          showToast("POC data reset.");
+        }
+      }
+
+      /* events */
+      document.getElementById("btn-add").addEventListener("click", function () { openBuilder(null); });
+      document.getElementById("btn-cancel").addEventListener("click", function () {
+        if (state.dirty) {
+          askConfirm("Discard changes?", "Your unsaved inspection changes will be lost.", "Discard", closeBuilder);
+        } else closeBuilder();
+      });
+      document.getElementById("btn-save").addEventListener("click", saveDraft);
+      document.getElementById("btn-preview").addEventListener("click", function () {
+        els.overlayPhone.innerHTML = phoneHtml(true);
+        els.overlay.hidden = false;
+      });
+      document.getElementById("btn-preview-close").addEventListener("click", function () {
+        els.overlay.hidden = true;
+        els.overlayPhone.innerHTML = "";
+      });
+      document.getElementById("btn-preview-save").addEventListener("click", saveDraft);
+      document.getElementById("btn-add-field").addEventListener("click", function () {
+        state.draft.fields.push(field("", "text", true));
+        state.focusKey = "f-" + state.draft.fields[state.draft.fields.length - 1].id;
+        markDirty();
+        renderBuilderLists();
+        updatePreview();
+        var input = els.fields.querySelector('input[data-act="f-name"]:last-of-type') || els.fields.querySelector('input[data-act="f-name"]');
+        var inputs = els.fields.querySelectorAll('input[data-act="f-name"]');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+      });
+      document.getElementById("btn-add-question").addEventListener("click", function () {
+        state.draft.questions.push(question("", YES_NO_NA, "radio", true));
+        state.focusKey = "q-" + state.draft.questions[state.draft.questions.length - 1].id;
+        markDirty();
+        renderBuilderLists();
+        updatePreview();
+        var inputs = els.questions.querySelectorAll('input[data-act="q-text"]');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+      });
+
+      els.name.addEventListener("input", function (e) {
+        state.draft.name = e.target.value;
+        markDirty();
+        if (e.target.value.trim()) {
+          els.name.classList.remove("is-invalid");
+          els.nameError.hidden = true;
+        }
+        syncPreviewLabels();
+      });
+
+      els.search.addEventListener("input", function (e) {
+        state.search = e.target.value;
+        state.page = 1;
+        renderList();
+      });
+
+      els.gridBody.addEventListener("click", function (e) {
+        var row = e.target.closest("tr");
+        if (!row) return;
+        var id = Number(row.getAttribute("data-id"));
+        var item = state.items.filter(function (x) { return x.id === id; })[0];
+        if (!item) return;
+        state.selectedId = id;
+        var action = e.target.getAttribute("data-action");
+        if (action === "edit") {
+          openBuilder(item);
+          return;
+        }
+        if (action === "delete") {
+          askConfirm("Delete inspection?", 'This will remove "' + item.name + '" from Inspections Management.', "Delete", function () {
+            state.items = state.items.filter(function (x) { return x.id !== id; });
+            persist();
+            renderList();
+            showToast("Inspection deleted successfully!");
+          });
+          return;
+        }
+        if (action === "toggle") {
+          var next = !item.isActive;
+          askConfirm(next ? "Enable inspection?" : "Disable inspection?",
+            next
+              ? '"' + item.name + '" will be available to specialists again.'
+              : '"' + item.name + '" will be hidden from specialists but kept in this list.',
+            next ? "Enable" : "Disable",
+            function () {
+              item.isActive = next;
+              persist();
+              renderList();
+              showToast("Inspection " + (next ? "enabled" : "disabled") + " successfully!");
+            });
+          return;
+        }
+        renderList();
+      });
+
+      function onBuilderClick(e) {
+        if (e.target.closest("input, select, textarea, .combo, .combo-menu")) return;
+        var t = e.target.closest("[data-act]");
+        if (!t || /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
+        var act = t.getAttribute("data-act");
+        var clickActs = {
+          "f-del": 1, "f-up": 1, "f-down": 1,
+          "q-del": 1, "q-up": 1, "q-down": 1,
+          "q-sel": 1, "q-mode": 1, "q-opt-del": 1, "drop-opt": 1,
+          "q-opt-add": 1, "drop-add": 1
+        };
+        if (!clickActs[act]) return;
+        var i = Number(t.getAttribute("data-i"));
+        var oi = Number(t.getAttribute("data-oi"));
+        var d = state.draft;
+        markDirty();
+
+        if (act === "f-del") d.fields.splice(i, 1);
+        if (act === "f-up") move(d.fields, i, -1);
+        if (act === "f-down") move(d.fields, i, 1);
+        if (act === "q-del") d.questions.splice(i, 1);
+        if (act === "q-up") move(d.questions, i, -1);
+        if (act === "q-down") move(d.questions, i, 1);
+        if (act === "q-sel") d.questions[i].selection = t.getAttribute("data-v");
+        if (act === "q-mode") {
+          d.questions[i].answerMode = t.getAttribute("data-v");
+          if (d.questions[i].answerMode === "manual" && !d.questions[i].inputType) d.questions[i].inputType = "text";
+          var qKey = "q-" + d.questions[i].id;
+          delete state.previewAnswers[qKey];
+        }
+        if (act === "q-opt-del") d.questions[i].options.splice(oi, 1);
+        if (act === "drop-opt") d.fields[i].options.splice(oi, 1);
+        if (act === "q-opt-add") addChoice(t.parentNode.querySelector("input"), d.questions[i].options);
+        if (act === "drop-add") addChoice(t.parentNode.querySelector("input"), d.fields[i].options);
+
+        renderBuilderLists();
+        updatePreview();
+        if (act === "q-opt-add") {
+          var qAdd = els.questions.querySelector('input[data-act="q-new"][data-i="' + i + '"]');
+          if (qAdd) qAdd.focus();
+        }
+        if (act === "drop-add") {
+          var fAdd = els.fields.querySelector('input[data-act="drop-new"][data-i="' + i + '"]');
+          if (fAdd) fAdd.focus();
+        }
+      }
+
+      function onBuilderInput(e) {
+        var t = e.target;
+        var act = t.getAttribute("data-act");
+        if (!state.draft || !act) return;
+        var i = Number(t.getAttribute("data-i"));
+        if (act === "f-name") {
+          state.draft.fields[i].name = t.value;
+          markDirty();
+          syncPreviewLabels();
+        } else if (act === "q-text") {
+          state.draft.questions[i].text = t.value;
+          markDirty();
+          syncPreviewLabels();
+        }
+      }
+
+      function onBuilderChange(e) {
+        var t = e.target;
+        var act = t.getAttribute("data-act");
+        if (!state.draft || !act) return;
+        var i = Number(t.getAttribute("data-i"));
+        if (act === "f-req") {
+          state.draft.fields[i].required = t.checked;
+          markDirty();
+          syncPreviewLabels();
+        } else if (act === "q-req") {
+          state.draft.questions[i].required = t.checked;
+          markDirty();
+          syncPreviewLabels();
+        }
+      }
+
+      function onBuilderFocus(e) {
+        var card = e.target.closest("[data-focus]");
+        if (!card) return;
+        state.focusKey = card.getAttribute("data-focus");
+        Array.prototype.forEach.call(document.querySelectorAll(".card"), function (c) {
+          c.classList.toggle("is-focus", c === card);
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-preview-key]"), function (n) {
+          n.classList.toggle("is-hot", n.getAttribute("data-preview-key") === state.focusKey);
+        });
+      }
+
+      function applyComboPick(pick) {
+        var kind = pick.getAttribute("data-combo-pick");
+        var value = pick.getAttribute("data-v");
+        var combo = pick.closest(".combo") || pick.parentNode._home;
+        var trigger = combo && combo.querySelector("[data-combo-toggle]");
+
+        if (kind === "page-size") {
+          state.pageSize = Number(value);
+          state.page = 1;
+          closeCombos();
+          renderList();
+          document.querySelectorAll('[data-combo-pick="page-size"]').forEach(function (btn) {
+            btn.classList.toggle("is-selected", btn.getAttribute("data-v") === String(state.pageSize));
+          });
+          return;
+        }
+
+        if (kind === "f-type" && state.draft) {
+          var fi = Number(pick.getAttribute("data-i"));
+          state.draft.fields[fi].type = value;
+          if (value === "dropdown" && !state.draft.fields[fi].options.length) {
+            state.draft.fields[fi].options = SAMPLE_CTC.slice();
+          }
+          markDirty();
+          closeCombos();
+          renderBuilderLists();
+          updatePreview();
+          return;
+        }
+
+        if (kind === "q-input-type" && state.draft) {
+          var qi = Number(pick.getAttribute("data-i"));
+          state.draft.questions[qi].inputType = value;
+          delete state.previewAnswers["q-" + state.draft.questions[qi].id];
+          markDirty();
+          closeCombos();
+          renderBuilderLists();
+          updatePreview();
+          return;
+        }
+
+        if (kind === "preview-field") {
+          state.previewDetails["f-" + pick.getAttribute("data-id")] = value;
+          if (trigger) {
+            trigger.textContent = value || trigger.getAttribute("data-placeholder") || "Select...";
+            trigger.classList.toggle("has-value", !!value);
+          }
+          closeCombos();
+          return;
+        }
+
+        closeCombos();
+      }
+
+      els.fields.addEventListener("click", onBuilderClick);
+      els.questions.addEventListener("click", onBuilderClick);
+      els.fields.addEventListener("input", onBuilderInput);
+      els.questions.addEventListener("input", onBuilderInput);
+      els.fields.addEventListener("change", onBuilderChange);
+      els.questions.addEventListener("change", onBuilderChange);
+      els.fields.addEventListener("focusin", onBuilderFocus);
+      els.questions.addEventListener("focusin", onBuilderFocus);
+      els.fields.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && e.target.getAttribute("data-act") === "drop-new") {
+          e.preventDefault();
+          var i = Number(e.target.getAttribute("data-i"));
+          addChoice(e.target, state.draft.fields[i].options);
+          markDirty();
+          renderBuilderLists();
+          updatePreview();
+          var again = els.fields.querySelector('input[data-act="drop-new"][data-i="' + i + '"]');
+          if (again) again.focus();
+        }
+      });
+      els.questions.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && e.target.getAttribute("data-act") === "q-new") {
+          e.preventDefault();
+          var i = Number(e.target.getAttribute("data-i"));
+          addChoice(e.target, state.draft.questions[i].options);
+          markDirty();
+          renderBuilderLists();
+          updatePreview();
+          var again = els.questions.querySelector('input[data-act="q-new"][data-i="' + i + '"]');
+          if (again) again.focus();
+        }
+      });
+
+      document.addEventListener("click", function (e) {
+        var pick = e.target.closest("[data-combo-pick]");
+        if (pick) {
+          e.preventDefault();
+          applyComboPick(pick);
+          return;
+        }
+        var toggle = e.target.closest("[data-combo-toggle]");
+        if (toggle) {
+          e.preventDefault();
+          openCombo(toggle);
+          return;
+        }
+        if (!e.target.closest(".combo-menu")) closeCombos();
+      });
+      document.querySelector(".builder-form").addEventListener("scroll", closeCombos);
+      document.querySelector(".builder-preview").addEventListener("scroll", closeCombos);
+      window.addEventListener("resize", closeCombos);
+
+      function onPreviewChoice(e) {
+        var input = e.target;
+        if (!input || !input.getAttribute("data-preview-q")) return;
+        if (input.getAttribute("data-mode") === "manual") return;
+        var id = input.getAttribute("data-preview-q");
+        var opt = input.value;
+        var mode = input.getAttribute("data-mode");
+        var key = "q-" + id;
+        if (mode === "checkbox") {
+          var cur = state.previewAnswers[key] ? state.previewAnswers[key].slice() : [];
+          var idx = cur.indexOf(opt);
+          if (input.checked && idx === -1) cur.push(opt);
+          if (!input.checked && idx !== -1) cur.splice(idx, 1);
+          state.previewAnswers[key] = cur;
+        } else {
+          state.previewAnswers[key] = opt;
+        }
+      }
+
+      function onPreviewFieldInput(e) {
+        var t = e.target;
+        if (t.getAttribute("data-preview-q") && t.getAttribute("data-mode") === "manual") {
+          state.previewAnswers["q-" + t.getAttribute("data-preview-q")] = t.value;
+          return;
+        }
+        if (t.getAttribute("data-preview-field")) {
+          state.previewDetails["f-" + t.getAttribute("data-preview-field")] = t.value;
+          if (t.tagName === "SELECT") t.classList.toggle("has-value", !!t.value);
+          return;
+        }
+        if (t.getAttribute("data-preview-notes")) {
+          state.previewNotes = t.value;
+        }
+      }
+
+      els.livePhone.addEventListener("change", onPreviewChoice);
+      els.overlayPhone.addEventListener("change", onPreviewChoice);
+      els.livePhone.addEventListener("input", onPreviewFieldInput);
+      els.overlayPhone.addEventListener("input", onPreviewFieldInput);
+      els.livePhone.addEventListener("change", onPreviewFieldInput);
+      els.overlayPhone.addEventListener("change", onPreviewFieldInput);
+
+      document.getElementById("confirm-cancel").addEventListener("click", closeConfirm);
+      els.confirmOk.addEventListener("click", function () {
+        var fn = confirmHandler;
+        closeConfirm();
+        if (fn) fn();
+      });
+      els.confirm.addEventListener("click", function (e) { if (e.target === els.confirm) closeConfirm(); });
+      els.overlay.addEventListener("click", function (e) {
+        if (e.target === els.overlay) {
+          els.overlay.hidden = true;
+          els.overlayPhone.innerHTML = "";
+        }
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          var openMenu = document.querySelector(".combo-menu:not([hidden])");
+          if (openMenu) {
+            closeCombos();
+            return;
+          }
+          if (!els.confirm.hidden) closeConfirm();
+          else if (!els.overlay.hidden) {
+            els.overlay.hidden = true;
+            els.overlayPhone.innerHTML = "";
+          }
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === "s" && state.view === "builder") {
+          e.preventDefault();
+          saveDraft();
+        }
+      });
+
+      document.querySelector(".poc-banner").addEventListener("dblclick", resetIfNeeded);
+
+      load();
+      renderList();
+    })();
+  </script>
+</body>
+</html>
